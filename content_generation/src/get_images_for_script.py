@@ -3,33 +3,41 @@ import os
 import json
 import re
 import base64
+import ast
 
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 prompt = """
-You are given a script for a TikTok video which is based on a research paper. The script will be used to voice over through the tik tok video.
-You are also given a list of captions for images.
+You are given a TikTok video script that is based on a research paper, along with a list of image captions. Your task is to create two lists of the same size by matching each part of the script with the most relevant image captions.
 
-Your task is to create two lists of same size.
+Create Two Lists:
 
-Identify what image caption is highly relevant to what part of the script and put them sequentially in the lists.
+List 1: Contains segments of the script.
+List 2: Contains the name of image relevant to the segment of the script
+For each segment of the script in List 1, identify the most relevant image captions from the provided list. In List 2, include these image names in the same order as they appear in List 1.
 
-You must create two lists, the first one will contain the part of the script and the second list will contain the tuples of relevant images for each part of the script in the same order.
-For each sentence identify the relevant images and tables based on the captions provided from them and put them in the second list.
+Ensure that no image is repeated in List 2.
 
-Try to include as many images as possible in the second list.
-If any image is not relevant to the sentence, put None in the second list.
-Add the image as the image name for the caption in the second list.
+Use the image names exactly as they appear in the list of captions.
+
+Provide the output in JSON format, ensuring it is compatible with regex and json.loads.
+
+Be sure to mention only the name of the image as mentioned in the caption.
+
+Here’s the required format for the output:
+
+Do not give any special characters unparsable by regex or json.loads
+
+If a image is not relevant to the part of the script, add '' for the image name in List 2
+
+json
+
+{{
+  "list_1": [part 1, part 2, ...],
+  "list_2": [image 1, image 2, ...]
+}}
 
 Input Script: {input_script}
-
-Do not repeat the images that are already in the second list.
-
-Example Output:
-```json
-list 1 : [part 1, part 2, part 3, ...]
-list 2 : [(image 1), (image 2, image 2), (None) ...]
-```
 """
 
 
@@ -55,7 +63,7 @@ def create_messages_with_images(input_script, base64_images, captions):
     #     content_list.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}})
 
     for file_path, caption in captions:
-        content_list.append({"type": "text", "text": f'Caption for {file_path}: ' + caption})
+        content_list.append({"type": "text", "text": f'Caption for image name - {file_path}\n: ' + caption})
 
     messages = [
         {
@@ -86,21 +94,48 @@ def get_captions(image_folder_path):
 def get_image_strings(captions, images, image_folder_path):
     image_strings = []
     for caption, image_path in zip(captions, images):
-        if image_path[0] is not None:
-            image_path = image_path[0]
-            image_strings.append({'caption': caption, 'image': encode_image(os.path.join(image_folder_path, image_path))})
+        if image_path != '':
+            image_strings.append(
+                {'caption': caption, 'image': encode_image(os.path.join(image_folder_path, image_path))})
         else:
             image_strings.append({'caption': caption, 'image': None})
     return image_strings
+
+
 def parse_response(response):
     try:
         response = response.choices[0].message.content
-        response = re.search(r'```json\n(.*)```', response, re.DOTALL).group(1)
         print(response)
+        if '```json' in response:
+            response = re.search(r'```json\n(.*)```', response, re.DOTALL).group(1)
+        elif response.startswith('{'):
+            response = response
+        else:
+            return None
+        # response = ast.literal_eval(response)
         response = json.loads(response)
-    except:
+    except Exception as e:
+        print(e)
         response = None
     return response
+
+
+def get_recorrect_the_format(response):
+    prompt = 'Correct the following response so that it is parsable by regex or json.loads\n'
+    response = response.choices[0].message.content
+    messages = [
+        {
+            "role": "system",
+            "content": prompt
+        },
+        {
+            "role": "user",
+            "content": response
+        }
+    ]
+    response = openai_client.chat.completions.create(model="gpt-4", messages=messages)
+    return response.choices[0].message.content
+
 
 def get_final_content(input_script, image_folder_path):
     images = get_base64_encoded_images(os.path.join(image_folder_path, "figures"))
@@ -109,10 +144,11 @@ def get_final_content(input_script, image_folder_path):
     parsed = False
     while not parsed:
         print('Getting response')
-        response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, temperature=0.1)
+        response = openai_client.chat.completions.create(model="gpt-4", messages=messages, temperature=0.3)
         parsed_response = parse_response(response)
         if parsed_response is not None:
             parsed = True
 
-    final_response = get_image_strings(parsed_response['list_1'], parsed_response['list_2'], os.path.join(image_folder_path, "figures"))
+    final_response = get_image_strings(parsed_response['list_1'], parsed_response['list_2'],
+                                       os.path.join(image_folder_path, "figures"))
     return {'final_response': final_response}
