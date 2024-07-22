@@ -1,27 +1,35 @@
 from openai import OpenAI
 import os
 import json
+import re
 import base64
 
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 prompt = """
 You are given a script for a TikTok video which is based on a research paper. The script will be used to voice over through the tik tok video.
-You are also given a list of images and tables extracted from the research paper. 
+You are also given a list of captions for images.
 
-Your task is to create two lists of same size. Chunk the input script into n number of sentences.
-For each sentence identify the relevant images and tables and put them in the second list.
+Your task is to create two lists of same size.
 
-The second list can be a lis qt of tuples, such that for each sentence in the first list you will have 1 or more relevant images in the second list as a tuple.
+Identify what image caption is highly relevant to what part of the script and put them sequentially in the lists.
 
-If any image is not highly relevant to the sentence, put None in the second list.
+You must create two lists, the first one will contain the part of the script and the second list will contain the tuples of relevant images for each part of the script in the same order.
+For each sentence identify the relevant images and tables based on the captions provided from them and put them in the second list.
+
+Try to include as many images as possible in the second list.
+If any image is not relevant to the sentence, put None in the second list.
+Add the image as the image name for the caption in the second list.
 
 Input Script: {input_script}
 
-Example Output:
+Do not repeat the images that are already in the second list.
 
-list 1 : [sentence 1, sentence 2, sentence 3, ...]
+Example Output:
+```json
+list 1 : [part 1, part 2, part 3, ...]
 list 2 : [(image 1), (image 2, image 2), (None) ...]
+```
 """
 
 
@@ -43,11 +51,11 @@ def create_messages_with_images(input_script, base64_images, captions):
     input_prompt = prompt.format(input_script=input_script)
     content_list = [{"type": "text", "text": input_prompt}]
 
-    for i, base64_image in enumerate(base64_images):
-        content_list.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}})
+    # for i, base64_image in base64_images:
+    #     content_list.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}})
 
-    for i, caption in enumerate(captions):
-        content_list.append({"type": "text", "text": f'image_{i}' + caption})
+    for file_path, caption in captions:
+        content_list.append({"type": "text", "text": f'Caption for {file_path}: ' + caption})
 
     messages = [
         {
@@ -70,14 +78,41 @@ def get_captions(image_folder_path):
     captions = []
     for dict_ in data:
         caption = dict_['caption']
-        captions.append(caption)
+        image_path = os.path.split(dict_['renderURL'])[1]
+        captions.append((image_path, caption))  # (image_path, caption)
     return captions
 
 
+def get_image_strings(captions, images, image_folder_path):
+    image_strings = []
+    for caption, image_path in zip(captions, images):
+        if image_path[0] is not None:
+            image_path = image_path[0]
+            image_strings.append({'caption': caption, 'image': encode_image(os.path.join(image_folder_path, image_path))})
+        else:
+            image_strings.append({'caption': caption, 'image': None})
+    return image_strings
+def parse_response(response):
+    try:
+        response = response.choices[0].message.content
+        response = re.search(r'```json\n(.*)```', response, re.DOTALL).group(1)
+        print(response)
+        response = json.loads(response)
+    except:
+        response = None
+    return response
+
 def get_final_content(input_script, image_folder_path):
-    images = get_base64_encoded_images(image_folder_path + "/figures")
+    images = get_base64_encoded_images(os.path.join(image_folder_path, "figures"))
     captions = get_captions(image_folder_path)
     messages = create_messages_with_images(input_script, images, captions)
-    from ipdb import set_trace; set_trace()
-    response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, temperature=0.1)
-    return response
+    parsed = False
+    while not parsed:
+        print('Getting response')
+        response = openai_client.chat.completions.create(model="gpt-4o", messages=messages, temperature=0.1)
+        parsed_response = parse_response(response)
+        if parsed_response is not None:
+            parsed = True
+
+    final_response = get_image_strings(parsed_response['list_1'], parsed_response['list_2'], os.path.join(image_folder_path, "figures"))
+    return {'final_response': final_response}
