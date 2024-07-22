@@ -18,3 +18,11 @@ class OpenAIClient:
         )
         return response["choices"][0]["message"]["content"]
 
+    def get_images(self, input_script):
+        response = self.openai.images.generate(
+            prompt=input_script
+        )
+        return response
+
+
+

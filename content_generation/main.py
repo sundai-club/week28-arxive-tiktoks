@@ -21,6 +21,7 @@ def generate_content(data: dict):
     generated_content = content_generator.process(paper_path)
     return {'generated_content': generated_content}
 
+# generate_content({'paper_path': "C:/Users/mihir/PycharmProjects/week28-arxive-tiktoks/content_generation/src/2402.09246v4.pdf"})
 
 if __name__ == "__main__":
     import uvicorn

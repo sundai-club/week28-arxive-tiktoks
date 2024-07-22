@@ -1,4 +1,11 @@
 import PyPDF2
+import scipdf
+
+
+def get_all_images(pdf_file_path):
+    scipdf.parse_figures(pdf_file_path, output_folder=pdf_file_path.split('.pdf')[0] + '_figures')
+    return pdf_file_path.split('.pdf')[0] + '_figures'
+
 
 def parse_pdf(pdf_file_path):
     content = ""
@@ -7,7 +14,9 @@ def parse_pdf(pdf_file_path):
             pdf_reader = PyPDF2.PdfReader(file)
             for page in pdf_reader.pages:
                 content += page.extract_text()
-        return content
+
+        images_path = get_all_images(pdf_file_path)
+        return content, images_path
 
     except FileNotFoundError:
         print(f"File not found: {pdf_file_path}")

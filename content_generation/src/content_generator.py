@@ -1,6 +1,8 @@
-from src.pdf_parser import parse_pdf
-from src.llm_generation_module import GenerationModule
+from content_generation.src.pdf_parser import parse_pdf
+from content_generation.src.llm_generation_module import GenerationModule
 import dspy
+from content_generation.src.get_images_for_script import get_final_content
+
 
 class ContentGenerator:
     def __init__(self, model_name='gpt-4-turbo'):
@@ -13,10 +15,11 @@ class ContentGenerator:
 
     def process(self, pdf_file_path):
         print(f"Parsing PDF... ")
-        content = self.parse_pdf(pdf_file_path)
+        content, images_path = self.parse_pdf(pdf_file_path)
         if content is not None:
             generated_content = self.generation_module(content)
-            return generated_content
+            final_response = get_final_content(generated_content['voice_over_script'], images_path)
+            return {'final_response': final_response}
         else:
             print('File could not be processed')
             return None
