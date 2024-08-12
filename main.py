@@ -1,7 +1,7 @@
 import requests
 import dataclasses
 import tempfile
-from content_generation.src.content_generator import process
+from content_generation.process_paper import get_tiktok_script
 import scrape_arxiv
 import json
 import re
@@ -31,26 +31,10 @@ def parse_raw_script(raw_script):
     return ret
 
 
-
-def process_paper(url: str) -> list[SceneDesc]:
-    content = requests.get(url)
-    paper_name = url.split("/")[-1]
-    if '.pdf' in paper_name:
-        paper_name = paper_name.replace('.pdf', '')
-    
-    # Use a temporary file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf", prefix=paper_name, dir=None) as temp_file:
-        temp_file.write(content.content)
-        temp_file_path = temp_file.name
-
-    video_script_raw = process(temp_file_path)
-    video_script: list[SceneDesc] = parse_raw_script(video_script_raw)
-    return video_script
-
-
-
 categories=['CVPR', 'ML', 'CL', 'IT', 'Robotics', 'Crypto', 'AI']
 urls_list = scrape_arxiv.scrape_arxiv_links(categories)
 for url in urls_list:
-    x = process_paper(url)
-    print(x)
+    raw_script, caption = get_tiktok_script(url)
+    video_script: list[SceneDesc] = parse_raw_script(raw_script)
+    print(video_script)
+    print(caption)
