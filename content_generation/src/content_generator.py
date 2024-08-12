@@ -1,6 +1,6 @@
 import os
 from src.pdf_parser import parse_pdf, get_all_images
-from src.generation_module import generate_script, get_descriptions, align_img_script
+from src.generation_module import generate_script, get_descriptions, align_img_script, get_caption
 from src.get_images_for_script import get_final_content
 from src.prompts import align_image_to_script_prompt
 
@@ -29,7 +29,8 @@ def process(pdf_file_path):
     image_descriptions = get_descriptions(os.path.join(images_path, 'figures'))
     print(image_descriptions)
     alignment_response = align_image_to_script(script, image_descriptions)
-    return alignment_response
+    caption = get_caption(script)
+    return alignment_response, caption
 
 
 

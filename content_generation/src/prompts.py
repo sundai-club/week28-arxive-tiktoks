@@ -62,3 +62,11 @@ Your output should be a list of dictionaries in the following format:
 
 Output:
 '''
+
+
+caption_generation_prompt = '''
+Based on the following tik-tok script generate a caption with suitable hashtags. Only give the caption as the output.
+
+{script}
+
+'''
