@@ -1,5 +1,5 @@
 from src.openai_client import OpenAIClient
-from src.prompts import script_generation_prompt, image_description_prompt
+from src.prompts import script_generation_prompt, image_description_prompt, caption_generation_prompt
 from tqdm import tqdm
 import base64
 
@@ -40,3 +40,7 @@ def generate_script(content):
 def align_img_script(input_prompt):
     return openai_client.generate_content(input_prompt, temperature=0.1)
 
+
+def get_caption(script):
+    caption = openai_client.generate_content(caption_generation_prompt.format(script=script))
+    return caption
