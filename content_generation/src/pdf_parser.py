@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 import shutil
 
-PDF_FIGURES_JAR_PATH = 'pdffigures2/pdffigures2-assembly-0.0.12-SNAPSHOT.jar'
+PDF_FIGURES_JAR_PATH = 'content_generation/pdffigures2/pdffigures2-assembly-0.0.12-SNAPSHOT.jar'
 
 print(os.path.abspath(PDF_FIGURES_JAR_PATH))
 
@@ -13,7 +13,8 @@ print(os.path.abspath(PDF_FIGURES_JAR_PATH))
 def parse_figures(pdf_file, jar_path, output_folder, resolution=300):
 
     #if not op.isdir(output_folder):
-    shutil.rmtree(output_folder)
+    if os.path.exists(output_folder):
+        shutil.rmtree(output_folder)
     os.makedirs(output_folder)
 
     data_path = op.join(output_folder, "data")
@@ -51,7 +52,7 @@ def parse_figures(pdf_file, jar_path, output_folder, resolution=300):
 
 
 def get_all_images(pdf_file_path):
-    output_folder = 'current_outputs'
+    output_folder = os.path.join(os.getcwd(), 'current_outputs')
     if not parse_figures(pdf_file_path, PDF_FIGURES_JAR_PATH, output_folder):
         return None
     return output_folder
