@@ -1,3 +1,4 @@
+#import tiktokgen
 import requests
 import dataclasses
 import tempfile
@@ -31,10 +32,21 @@ def parse_raw_script(raw_script):
     return ret
 
 
+def create_input_script(video_script):
+    script = []
+    video_script = [v.__dict__ for v in video_script]
+    for i, item in enumerate(video_script):
+        script.append({ 'text': item['sentenct'],
+                        'foreground_img': os.path.join(os.getcwd(),'content_generation/current_outputs/figures', f"/image_{i}.png") if image is not None else None})
+    return script
+
+
 categories=['CVPR', 'ML', 'CL', 'IT', 'Robotics', 'Crypto', 'AI']
 urls_list = scrape_arxiv.scrape_arxiv_links(categories)
-for url in urls_list:
+print(urls_list)
+for url in urls_list[:1]:
     raw_script, caption = get_tiktok_script(url)
     video_script: list[SceneDesc] = parse_raw_script(raw_script)
     print(video_script)
     print(caption)
+    #tiktokgen.pipeline.pipeline(script, f'video_{url.split("/")[-1]}.mp4', style='Internet Videos')

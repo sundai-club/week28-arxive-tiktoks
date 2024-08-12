@@ -1,4 +1,4 @@
 selenium
 bs4
 lxml
-git+ssh://git@github.com/sundai-club/TikTok_generation_platform.git@main
+git+https://github.com/sundai-club/TikTok_generation_platform.git

@@ -1,4 +1,4 @@
-from src.content_generator import process
+from content_generation.src.content_generator import process
 import os
 import tempfile
 import requests
@@ -17,7 +17,7 @@ def get_tiktok_script(url):
     
     tik_tok_input, caption = process(temp_file_path)
     
-    caption = f"Paper : {}\n {caption}"
+    caption = f"Paper : {url}\n {caption}"
 
     return tik_tok_input, caption
 
