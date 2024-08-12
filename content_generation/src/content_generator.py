@@ -1,12 +1,7 @@
 import os
-from src.pdf_parser import parse_pdf, get_all_images
-from src.generation_module import generate_script, get_descriptions, align_img_script, get_caption
-from src.get_images_for_script import get_final_content
-from src.prompts import align_image_to_script_prompt
-
-    
-
-
+from .pdf_parser import parse_pdf, get_all_images
+from .generation_module import generate_script, get_descriptions, align_img_script, get_caption
+from .prompts import align_image_to_script_prompt
 
 def get_script(content):
     script = generate_script(content)

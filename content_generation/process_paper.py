@@ -1,4 +1,4 @@
-from content_generation.src.content_generator import process
+from .src.content_generator import process
 import os
 import tempfile
 import requests

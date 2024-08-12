@@ -1,5 +1,5 @@
-from src.openai_client import OpenAIClient
-from src.prompts import script_generation_prompt, image_description_prompt, caption_generation_prompt
+from .openai_client import OpenAIClient
+from .prompts import script_generation_prompt, image_description_prompt, caption_generation_prompt
 from tqdm import tqdm
 import base64
 

@@ -6,6 +6,7 @@ from content_generation.process_paper import get_tiktok_script
 import scrape_arxiv
 import json
 import re
+import os
 
 @dataclasses.dataclass
 class SceneDesc:
@@ -34,10 +35,11 @@ def parse_raw_script(raw_script):
 
 def create_input_script(video_script):
     script = []
-    video_script = [v.__dict__ for v in video_script]
-    for i, item in enumerate(video_script):
-        script.append({ 'text': item['sentenct'],
-                        'foreground_img': os.path.join(os.getcwd(),'content_generation/current_outputs/figures', f"/image_{i}.png") if image is not None else None})
+    for item in video_script:
+        script.append({
+            'text': item.sentence,
+            'foreground_img': os.path.join(os.getcwd(),'content_generation/current_outputs/figures', item.image_name) if item.image_name is not None else None
+        })
     return script
 
 
